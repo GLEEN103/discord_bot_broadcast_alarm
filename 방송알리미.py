@@ -401,6 +401,7 @@ class twitch_api:
         
     async def get_user(self, twitch_user_name):
         """트위치 api에게 유저데이터를 요청
+        요청 개수가 여러개일 경우 get_users를 사용할 것
 
         Args:
             twitch_user_name (_str_): 요청하려는 유저의 이름
@@ -412,8 +413,26 @@ class twitch_api:
         json = response_channel.json()
         return json
     
+    async def get_users(self, twitch_user_name_list):
+        """트위치 api에게 유저데이터를 요청
+
+        Args:
+            twitch_user_name_list (_type_): 요청하려는 유저의 이름이 담긴 리스트
+
+        Returns:
+            _dic_: api의 json형식 응답을 dic으로 변환해서 리턴
+        """
+        text = ""
+        for user_name in twitch_user_name_list:
+            text += "&login=" + user_name
+        text = text[1:]
+        response_channel = requests.get(f"https://api.twitch.tv/helix/users?{text}",headers=self.headers)
+        json = response_channel.json()
+        return json
+    
     async def get_user_by_id(self, user_id):
         """트위치 api에게 유저데이터를 요청
+        요청 개수가 여러개일경우 get_user_by_ids를 사용할 것
 
         Args:
             twitch_user_name (_str_): 요청하려는 유저의 ID
@@ -422,6 +441,23 @@ class twitch_api:
             _dic_: api의 json형식 응답을 dic으로 변환해서 리턴
         """
         response_channel = requests.get(f"https://api.twitch.tv/helix/users?id={user_id}",headers=self.headers)
+        json = response_channel.json()
+        return json
+    
+    async def get_user_by_ids(self, user_id_list):
+        """트위치 api에게 유저데이터를 요청
+
+        Args:
+            user_id_list (_type_): 요청하려는 유저의 ID가 담긴 리스트
+
+        Returns:
+            _dic_: api의 json형식 응답을 dic으로 변환해서 리턴
+        """
+        text = ""
+        for user_name in user_id_list:
+            text += "&id=" + user_name
+        text = text[1:]
+        response_channel = requests.get(f"https://api.twitch.tv/helix/users?{text}",headers=self.headers)
         json = response_channel.json()
         return json
         
@@ -438,8 +474,8 @@ class twitch_api:
     
             
 #서버 리스트
-# server_list = [348474574666465284, 979042884219174923]
-server_list = [979042884219174923]
+server_list = [348474574666465284, 979042884219174923]
+# server_list = [979042884219174923]
 
 #최초 설정
 Main_logger = SetLogger("main") #메인 로거 설정
@@ -561,7 +597,7 @@ async def on_ready():
     Main_logger.info("Logged on as {0}".format(bot.user))
     await test_DB()
     
-    GLL = asyncio.create_task(get_live_loop())
+    # GLL = asyncio.create_task(get_live_loop())
     # await GLL
     
 @bot.slash_command(guild_ids = server_list, description="봇의 응답속도 체크")
@@ -666,12 +702,15 @@ async def twitch_list(ctx):
     if await admin_command(ctx):
         embed = discord.Embed(title="이 서버에 알림등록된 방송들", color=0xFFFFFF)
         channel_list = await db_twitch.find_all([ctx.guild.id, None])
+        ids = list()
+        for i in channel_list:
+            ids.append(i[1])
+        json = await t_api.get_user_by_ids(ids)
+        json = json['data']
         i = 1
-        for user_id in channel_list:
-            json = await t_api.get_user_by_id(user_id[1])
-            json = json['data'][0]
-            embed.add_field(name="{0}. {1}".format(i, json['display_name']),
-                            value="{0}\n link : https://www.twitch.tv/{1}".format(json['description'],json['login']), inline=False)
+        for user_data in json:
+            embed.add_field(name="{0}. {1}".format(i, user_data['display_name']),
+                            value="{0}\n link : https://www.twitch.tv/{1}".format(user_data['description'],user_data['login']), inline=False)
             i += 1
         
         await ctx.respond(embed=embed)
