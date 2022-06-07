@@ -1,8 +1,0 @@
-2022-05-25 07:01:03,909 - main - INFO - twitch api token : 6d05ean823yqgkpd3blpznct8v46sv
-2022-05-25 07:01:06,726 - main - INFO - Logged on as 방송알리미#4532
-2022-05-25 07:01:10,804 - main - DEBUG - get_live_loop() started
-2022-05-25 07:01:13,333 - main - INFO - GLEEN#6022 use to /twitch_remove
-2022-05-25 07:01:15,746 - main - DEBUG - get_live_loop() started
-2022-05-25 07:01:19,992 - main - INFO - GLEEN#6022 use to /twitch_add
-2022-05-25 07:01:20,509 - main - DEBUG - get_live_loop() started
-2022-05-25 07:01:22,356 - main - INFO - id:{0} is OnAir

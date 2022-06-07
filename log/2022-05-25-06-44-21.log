@@ -1,9 +1,0 @@
-2022-05-25 06:44:22,393 - main - INFO - twitch api token : j7ftnzw7gr7q3ey7xcpfcgxpdukntn
-2022-05-25 06:44:25,469 - main - INFO - Logged on as 방송알리미#4532
-2022-05-25 06:44:25,547 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:30,710 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:35,771 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:40,889 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:45,067 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:50,158 - main - DEBUG - get_live_loop() started
-2022-05-25 06:44:55,282 - main - DEBUG - get_live_loop() started
