@@ -1,0 +1,2 @@
+2022-05-23 14:13:18,302 - main - ERROR - type:02 config.ini의 Twitch_Client_ID값이 없습니다.
+2022-05-23 14:13:18,303 - main - ERROR - type:03 config.ini의 Twitch_Client_Secret값이 없습니다.

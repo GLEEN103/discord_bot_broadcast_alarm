@@ -1,0 +1,3 @@
+2022-05-23 14:16:15,105 - main - ERROR - type:02 config.ini의 Twitch_Client_ID값이 없습니다.
+2022-05-23 14:16:15,108 - main - ERROR - type:03 config.ini의 Twitch_Client_Secret값이 없습니다.
+2022-05-23 14:16:15,109 - main - ERROR - 컨피그 에러 발생! 3초 뒤 자동으로 종료됩니다.

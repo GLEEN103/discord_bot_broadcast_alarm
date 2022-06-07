@@ -1,0 +1,4 @@
+2022-05-25 07:21:25,352 - main - INFO - twitch api token : 4b86fqf7nhz0cwzu2f666yupcclxmv
+2022-05-25 07:21:28,250 - main - INFO - Logged on as 방송알리미#4532
+2022-05-25 07:21:30,337 - main - DEBUG - get_live_loop() started
+2022-05-25 07:21:32,232 - main - INFO - id:{0} is OnAir
