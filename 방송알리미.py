@@ -470,6 +470,15 @@ class twitch_api:
         response_channel = requests.get(f"https://api.twitch.tv/helix/streams?user_id={user_id}",headers=self.headers)
         json = response_channel.json()
         return json
+    
+    async def get_broadcast_info_by_ids(self, user_id_list):
+        text = ""
+        for user_id in user_id_list:
+            text += "&user_id=" + user_id
+        text = text[1:]
+        response_channel = requests.get(f"https://api.twitch.tv/helix/streams?{text}",headers=self.headers)
+        json = response_channel.json()
+        return json
         
     
             
@@ -545,51 +554,99 @@ async def admin_command(ctx):
         return False
     
 async def test_DB():
-    """twitch_channel table의 정보를 broadcast table로 변환하는 함수
-    """
-    data = await db_twitch.get_all()
-    channels = list()
-    for i in data:
-        if not i[1] in channels:
-            channels.append(i[1])
+    async def refresh_DB():
+        """twitch_channel table의 정보를 broadcast table로 변환
+        """
+        data = await db_twitch.get_all()
+        channels = list()
+        for i in data:
+            if not i[1] in channels:
+                channels.append(i[1])
+        
+        for i in channels:
+            result = await db_broadcast.find([i ,None])
+            if not result:
+                await db_broadcast.add([i, False])
     
-    for i in channels:
-        result = await db_broadcast.find([i ,None])
-        if not result:
-            await db_broadcast.add([i, False])
+    async def delete_not_guild():
+        """broadcast table의 user_id중 guild에 등록되어있지 않은 요소 제거
+        """
+        data = await db_broadcast.get_all()
+        user_ids = list()
+        for i in data:
+            user_ids.append(i[0])
+        
+        for user_id in user_ids:
+            result = await db_twitch.find([None, user_id])
+            if not result:
+                await db_broadcast.remove([user_id,None])
+        
+    await refresh_DB()
+    await delete_not_guild()
 
 async def get_live_loop():
     """2분마다 방송정보를 불러오는 함수
     """
     while True:
-        tm = time.localtime()
-        if (tm.tm_sec % 10) == 0:
-            await test_DB()
-            Main_logger.debug("get_live_loop() started")
-            
-            data = await db_broadcast.get_all()
-            for i in data:
-                guild_ids = await db_twitch.find_all([None, i[0]])
-                if guild_ids:
-                    json = await t_api.get_broadcast_info_by_id(i[0])
-                    if json['data']:
-                        if await db_broadcast.find([i[0], 0]):
-                            await db_broadcast.update([i[0], None], True, 1)
-                            Main_logger.info('id:{0} is OnAir'.format(i[0]))
-                            
-                            for guild_id in guild_ids:
-                                channel_ids = await db_alarm.find_all([guild_id[0], None])
-                                for channel_id in channel_ids:
-                                    await bot.get_channel(int(channel_id[2])).send("id:{0}_test".format(i[0]))
-                            
-                    else:
-                        await db_broadcast.update([i[0], None], False, 1)
+        try:
+            async def test_for_alarm(user_id, on):
+                result = await db_broadcast.find([user_id,None])
+                if on:
+                    if result[1] == '0':
+                        await db_broadcast.update([user_id,None], True, 1)
+                        return True
                 else:
-                    await db_broadcast.remove([i[0],None])
-                            
-                
+                    if result[1] == '1':
+                        await db_broadcast.update([user_id,None], False, 1)
+                return False
             
-        await asyncio.sleep(1)
+            async def do_alarm(user_id):
+                result = await db_twitch.find_all([None, user_id])
+                for guild in result:
+                    channel_ids = await db_alarm.find_all([guild[0],None])
+                    for channel_id in channel_ids:
+                        channel = bot.get_channel(int(channel_id[2]))
+                        if channel:
+                            json = await t_api.get_user_by_id(user_id)
+                            json = json['data'][0]
+                            await channel.send(json['display_name'])
+                        else:
+                            Main_logger.error(f"user_id : {user_id}, guild : {guild}, channel_id : {channel_id}, 길드를 찾을 수 없습니다.")
+                return
+            
+            async def test_onair(broadcasts, json):
+                onair_ids = list()
+                for i in json:
+                    onair_ids.append(i['user_id'])
+                    
+                for user_id in broadcasts:
+                    if user_id in onair_ids:
+                        if await test_for_alarm(user_id, True):
+                            await do_alarm(user_id)
+                    else:
+                        await test_for_alarm(user_id, False)
+              
+              
+            #                    
+            tm = time.localtime()
+            if (tm.tm_sec % 10) == 0:
+                await test_DB()
+                Main_logger.debug("get_live_loop() started")
+                
+                data = await db_broadcast.get_all()
+                broadcasts = list()
+                for i in data:
+                    broadcasts.append(i[0])
+                
+                json = await t_api.get_broadcast_info_by_ids(broadcasts)
+                json = json['data']
+                
+                await test_onair(broadcasts, json)
+                
+            await asyncio.sleep(1)
+            
+        except Exception as e:
+            Main_logger.error(e)
         
 
 @bot.event
@@ -597,8 +654,8 @@ async def on_ready():
     Main_logger.info("Logged on as {0}".format(bot.user))
     await test_DB()
     
-    # GLL = asyncio.create_task(get_live_loop())
-    # await GLL
+    GLL = asyncio.create_task(get_live_loop())
+    await GLL
     
 @bot.slash_command(guild_ids = server_list, description="봇의 응답속도 체크")
 async def ping(ctx):
